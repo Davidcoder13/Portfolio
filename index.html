@@ -1,78 +1,167 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Student Portfolio | Home</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="styles.css" />
-  </head>
-  <body>
-    <header class="header">
-      <div class="container nav">
-        <div class="brand">
-          <span class="brand-badge">CS</span>
-          <span data-text="global.name">Student Name</span>
-        </div>
-        <nav class="nav-links">
-          <a class="active" href="index.html">Home</a>
-          <a href="about.html">About Me</a>
-          <a href="portfolio.html">Portfolio</a>
-          <a href="reflection.html">Reflection</a>
-        </nav>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>David Lunshof | Home</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.0.0"></script>
+</head>
+
+<body>
+
+<header class="header">
+  <div class="container nav">
+    <div class="brand">
+      <span class="brand-badge">CS</span>
+      <span>David Lunshof</span>
+    </div>
+
+    <nav class="nav-links">
+      <a class="active" href="index.html">Home</a>
+      <a href="about.html">About Me</a>
+      <a href="portfolio.html">Portfolio</a>
+      <a href="reflection.html">Reflection</a>
+    </nav>
+  </div>
+</header>
+
+<main class="container">
+
+  <section class="hero">
+
+    <!-- LEFT SIDE TEXT -->
+    <div class="hero-copy fade-up">
+      <div class="badge">BEM1O | Intro to Business & Technology</div>
+
+      <p class="hero-kicker">Hi there, I'm David.</p>
+
+      <h1 class="hero-title">
+        I build <span class="accent">interactive AI</span> projects
+      </h1>
+
+      <p class="hero-subtitle">
+        I enjoy building browser-based systems, experimenting with machine learning,
+        and understanding how digital tools work under the hood.
+      </p>
+
+      <div class="hero-actions">
+        <a class="btn-primary" href="portfolio.html">See My Work</a>
+        <a class="btn-ghost" href="about.html">About Me</a>
       </div>
-    </header>
+    </div>
 
-    <main class="container">
-      <section class="hero">
-        <div class="hero-copy fade-up">
-          <div class="badge" data-text="home.badge">BEM1O | Intro to Business and Technology</div>
-          <p class="hero-kicker">
-            <span data-text="home.taglineLead">Hi there, I'm David</span>.
-          </p>
-          <h1 class="hero-title">
-            <span data-text="home.heroTitleLead">I build</span>
-            <span class="accent rotate-word" data-rotate="home.heroTitleAccents">thoughtful</span>
-            <span data-text="home.heroTitleTail">tech projects</span>
-          </h1>
-          <p class="hero-subtitle" data-text="home.welcome">
-            I am a student interested in technology and computer science. I work on
-            websites and digital projects and enjoy learning how systems work and
-            improve over time. This portfolio tracks my learning, problem-solving,
-            and growth throughout the course.
-          </p>
-          <div class="hero-actions">
-            <a class="btn-primary" href="portfolio.html" data-text="home.primaryButton">See My Work</a>
-            <a class="btn-ghost" href="about.html" data-text="home.secondaryButton">About Me</a>
-          </div>
-          <div class="meta-row" data-pill-list="home.meta"></div>
+    <!-- RIGHT SIDE NN WIDGET -->
+    <div class="hero-visual fade-up">
+      <div class="nn-card">
+        <h3 class="nn-title">Live AI Demo</h3>
+        <div class="nn-grid" id="nnGrid"></div>
+
+        <div class="nn-controls">
+          <button onclick="nnPredict()">Predict</button>
+          <button onclick="nnClear()">Clear</button>
         </div>
-        <div class="hero-visual fade-up">
-          <div class="photo-card">
-            <div class="photo-placeholder">
-              <img src="David.jpg">
-            </div>
-          </div>
-        </div>
-      </section>
 
-      <section class="section">
-        <h2 class="section-title fade-up" data-text="home.highlightsTitle">Tech-Inspired Highlights</h2>
-        <p class="section-subtitle fade-up" data-text="home.highlightsSubtitle">
-          A simple overview of the skills and interests that shape my work in BEM1O.
-        </p>
-        <div class="grid" data-card-list="home.highlightCards"></div>
-      </section>
-    </main>
-
-    <footer class="footer">
-      <div class="container">
-        <span data-text="global.name">Student Name</span> |
-        <span data-text="global.course">BEM1O</span> Student Portfolio
+        <div class="nn-result" id="nnResult">?</div>
       </div>
-    </footer>
-    <script src="content-loader.js"></script>
-  </body>
+    </div>
+
+  </section>
+
+  <section class="section">
+    <h2 class="section-title">Tech-Inspired Highlights</h2>
+    <p class="section-subtitle">
+      A simple overview of the skills and interests that shape my work.
+    </p>
+    <div class="grid"></div>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <div class="container">
+    David Lunshof | BEM1O Student Portfolio
+  </div>
+</footer>
+
+<script>
+const SIZE = 24;
+let pixels = Array(SIZE).fill().map(() => Array(SIZE).fill(0));
+let drawing = false;
+let model;
+
+const grid = document.getElementById("nnGrid");
+
+// Create grid
+for (let y = 0; y < SIZE; y++) {
+  for (let x = 0; x < SIZE; x++) {
+    const cell = document.createElement("div");
+    cell.className = "nn-cell";
+
+    cell.addEventListener("mousedown", () => {
+      drawing = true;
+      fill(x, y, cell);
+    });
+
+    cell.addEventListener("mouseover", () => {
+      if (drawing) fill(x, y, cell);
+    });
+
+    grid.appendChild(cell);
+  }
+}
+
+document.body.addEventListener("mouseup", () => drawing = false);
+
+function fill(x, y, cell) {
+  pixels[y][x] = 1;
+  cell.style.background = "white";
+}
+
+function nnClear() {
+  pixels = Array(SIZE).fill().map(() => Array(SIZE).fill(0));
+  document.querySelectorAll(".nn-cell")
+    .forEach(c => c.style.background = "#111");
+  document.getElementById("nnResult").innerText = "?";
+}
+
+async function loadModel() {
+  model = await tf.loadLayersModel(
+    "https://storage.googleapis.com/tfjs-models/tfjs/mnist/model.json"
+  );
+}
+loadModel();
+
+function preprocess() {
+  return tf.tidy(() => {
+    let tensor = tf.tensor(pixels)
+      .expandDims(-1)
+      .resizeBilinear([28, 28])
+      .expandDims(0)
+      .toFloat();
+    return tensor;
+  });
+}
+
+async function nnPredict() {
+  if (!model) return;
+
+  const tensor = preprocess();
+  const prediction = model.predict(tensor);
+  const probs = await prediction.data();
+
+  const result = probs.indexOf(Math.max(...probs));
+  document.getElementById("nnResult").innerText = result;
+
+  tensor.dispose();
+  prediction.dispose();
+}
+</script>
+
+</body>
 </html>
