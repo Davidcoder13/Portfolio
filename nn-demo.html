@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Browser Neural Network</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.0.0"></script>
+
+<style>
+body {
+  margin: 0;
+  background: #0d0f14;
+  color: #e6e6e6;
+  font-family: system-ui, -apple-system, sans-serif;
+  text-align: center;
+}
+
+.wrapper {
+  padding: 15px;
+}
+
+h2 {
+  margin: 5px 0 10px 0;
+  font-weight: 600;
+  font-size: 18px;
+}
+
+canvas {
+  background: black;
+  border-radius: 10px;
+  cursor: crosshair;
+  box-shadow: 0 0 15px rgba(43,124,255,0.3);
+}
+
+.controls {
+  margin-top: 10px;
+}
+
+button {
+  padding: 8px 14px;
+  margin: 5px;
+  border: none;
+  border-radius: 6px;
+  background: #2b7cff;
+  color: white;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+button:hover {
+  background: #1f63d1;
+}
+
+.prediction {
+  margin-top: 12px;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.bars {
+  margin-top: 10px;
+  text-align: left;
+  font-size: 12px;
+}
+
+.bar {
+  height: 6px;
+  background: #222;
+  border-radius: 4px;
+  margin-bottom: 6px;
+  overflow: hidden;
+}
+
+.bar-fill {
+  height: 100%;
+  background: #2b7cff;
+  width: 0%;
+  transition: width 0.2s ease;
+}
+</style>
+</head>
+
+<body>
+
+<div class="wrapper">
+  <h2>Draw a Digit (0–9)</h2>
+
+  <canvas id="canvas" width="280" height="280"></canvas>
+
+  <div class="controls">
+    <button onclick="predict()">Predict</button>
+    <button onclick="clearCanvas()">Clear</button>
+  </div>
+
+  <div class="prediction" id="prediction">Prediction: ?</div>
+  <div class="bars" id="bars"></div>
+</div>
+
+<script>
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+let drawing = false;
+let model;
+
+// Initial black background
+ctx.fillStyle = "black";
+ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+// Smooth stroke drawing
+ctx.lineWidth = 18;
+ctx.lineCap = "round";
+ctx.strokeStyle = "white";
+
+canvas.addEventListener("mousedown", startDraw);
+canvas.addEventListener("mouseup", stopDraw);
+canvas.addEventListener("mouseleave", stopDraw);
+canvas.addEventListener("mousemove", draw);
+
+function startDraw(e) {
+  drawing = true;
+  ctx.beginPath();
+  ctx.moveTo(e.offsetX, e.offsetY);
+}
+
+function stopDraw() {
+  drawing = false;
+}
+
+function draw(e) {
+  if (!drawing) return;
+  ctx.lineTo(e.offsetX, e.offsetY);
+  ctx.stroke();
+}
+
+// Clear canvas
+function clearCanvas() {
+  ctx.fillStyle = "black";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  document.getElementById("prediction").innerText = "Prediction: ?";
+  document.getElementById("bars").innerHTML = "";
+}
+
+// Load pretrained MNIST model
+async function loadModel() {
+  model = await tf.loadLayersModel(
+    "https://storage.googleapis.com/tfjs-models/tfjs/mnist/model.json"
+  );
+  console.log("Model loaded");
+}
+
+loadModel();
+
+// Preprocess for model
+function preprocess() {
+  return tf.tidy(() => {
+    const imgData = ctx.getImageData(0, 0, 280, 280);
+    let tensor = tf.browser.fromPixels(imgData, 1)
+      .resizeBilinear([28, 28])
+      .toFloat()
+      .div(255.0)
+      .expandDims(0);
+
+    return tensor;
+  });
+}
+
+async function predict() {
+  if (!model) return;
+
+  const tensor = preprocess();
+  const prediction = model.predict(tensor);
+  const probs = await prediction.data();
+
+  const maxIndex = probs.indexOf(Math.max(...probs));
+  document.getElementById("prediction").innerText =
+    "Prediction: " + maxIndex;
+
+  renderBars(probs);
+
+  tensor.dispose();
+  prediction.dispose();
+}
+
+function renderBars(probs) {
+  const container = document.getElementById("bars");
+  container.innerHTML = "";
+
+  probs.forEach((p, i) => {
+    const label = document.createElement("div");
+    label.innerText = i + " : " + (p * 100).toFixed(1) + "%";
+
+    const bar = document.createElement("div");
+    bar.className = "bar";
+
+    const fill = document.createElement("div");
+    fill.className = "bar-fill";
+    fill.style.width = (p * 100) + "%";
+
+    bar.appendChild(fill);
+
+    container.appendChild(label);
+    container.appendChild(bar);
+  });
+}
+</script>
+
+</body>
+</html>
