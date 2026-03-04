@@ -1,165 +1,131 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
-<title>Browser Neural Network</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
+<title>Mini NN Widget</title>
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.0.0"></script>
 
 <style>
 body {
   margin: 0;
   background: #0d0f14;
-  color: #e6e6e6;
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: system-ui;
+  color: white;
   text-align: center;
 }
 
-.wrapper {
-  padding: 15px;
+.widget {
+  padding: 10px;
+  width: fit-content;
+  margin: auto;
 }
 
-h2 {
-  margin: 5px 0 10px 0;
-  font-weight: 600;
-  font-size: 18px;
+.grid {
+  display: grid;
+  grid-template-columns: repeat(24, 12px);
+  grid-template-rows: repeat(24, 12px);
+  gap: 1px;
+  background: #222;
+  padding: 4px;
+  border-radius: 6px;
 }
 
-canvas {
+.cell {
+  width: 12px;
+  height: 12px;
   background: black;
-  border-radius: 10px;
-  cursor: crosshair;
-  box-shadow: 0 0 15px rgba(43,124,255,0.3);
+  cursor: pointer;
 }
 
 .controls {
-  margin-top: 10px;
+  margin-top: 8px;
 }
 
 button {
-  padding: 8px 14px;
-  margin: 5px;
+  padding: 4px 8px;
+  margin: 4px;
   border: none;
-  border-radius: 6px;
+  border-radius: 4px;
   background: #2b7cff;
   color: white;
   cursor: pointer;
-  font-weight: 500;
-}
-
-button:hover {
-  background: #1f63d1;
-}
-
-.prediction {
-  margin-top: 12px;
-  font-size: 20px;
-  font-weight: 600;
-}
-
-.bars {
-  margin-top: 10px;
-  text-align: left;
   font-size: 12px;
 }
 
-.bar {
-  height: 6px;
-  background: #222;
-  border-radius: 4px;
-  margin-bottom: 6px;
-  overflow: hidden;
-}
-
-.bar-fill {
-  height: 100%;
-  background: #2b7cff;
-  width: 0%;
-  transition: width 0.2s ease;
+.prediction {
+  margin-top: 6px;
+  font-size: 14px;
 }
 </style>
 </head>
-
 <body>
 
-<div class="wrapper">
-  <h2>Draw a Digit (0–9)</h2>
-
-  <canvas id="canvas" width="280" height="280"></canvas>
+<div class="widget">
+  <div class="grid" id="grid"></div>
 
   <div class="controls">
     <button onclick="predict()">Predict</button>
-    <button onclick="clearCanvas()">Clear</button>
+    <button onclick="clearGrid()">Clear</button>
   </div>
 
-  <div class="prediction" id="prediction">Prediction: ?</div>
-  <div class="bars" id="bars"></div>
+  <div class="prediction" id="prediction">?</div>
 </div>
 
 <script>
-const canvas = document.getElementById("canvas");
-const ctx = canvas.getContext("2d");
+const grid = document.getElementById("grid");
 let drawing = false;
 let model;
 
-// Initial black background
-ctx.fillStyle = "black";
-ctx.fillRect(0, 0, canvas.width, canvas.height);
+const SIZE = 24;
+let pixels = Array(SIZE).fill().map(() => Array(SIZE).fill(0));
 
-// Smooth stroke drawing
-ctx.lineWidth = 18;
-ctx.lineCap = "round";
-ctx.strokeStyle = "white";
+// Create grid
+for (let y = 0; y < SIZE; y++) {
+  for (let x = 0; x < SIZE; x++) {
+    const cell = document.createElement("div");
+    cell.className = "cell";
 
-canvas.addEventListener("mousedown", startDraw);
-canvas.addEventListener("mouseup", stopDraw);
-canvas.addEventListener("mouseleave", stopDraw);
-canvas.addEventListener("mousemove", draw);
+    cell.addEventListener("mousedown", () => {
+      drawing = true;
+      togglePixel(x, y, cell);
+    });
 
-function startDraw(e) {
-  drawing = true;
-  ctx.beginPath();
-  ctx.moveTo(e.offsetX, e.offsetY);
+    cell.addEventListener("mouseover", () => {
+      if (drawing) togglePixel(x, y, cell);
+    });
+
+    grid.appendChild(cell);
+  }
 }
 
-function stopDraw() {
-  drawing = false;
+document.body.addEventListener("mouseup", () => drawing = false);
+
+function togglePixel(x, y, cell) {
+  pixels[y][x] = 1;
+  cell.style.background = "white";
 }
 
-function draw(e) {
-  if (!drawing) return;
-  ctx.lineTo(e.offsetX, e.offsetY);
-  ctx.stroke();
+function clearGrid() {
+  pixels = Array(SIZE).fill().map(() => Array(SIZE).fill(0));
+  document.querySelectorAll(".cell").forEach(c => c.style.background = "black");
+  document.getElementById("prediction").innerText = "?";
 }
 
-// Clear canvas
-function clearCanvas() {
-  ctx.fillStyle = "black";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  document.getElementById("prediction").innerText = "Prediction: ?";
-  document.getElementById("bars").innerHTML = "";
-}
-
-// Load pretrained MNIST model
+// Load MNIST model
 async function loadModel() {
   model = await tf.loadLayersModel(
     "https://storage.googleapis.com/tfjs-models/tfjs/mnist/model.json"
   );
-  console.log("Model loaded");
 }
-
 loadModel();
 
-// Preprocess for model
 function preprocess() {
   return tf.tidy(() => {
-    const imgData = ctx.getImageData(0, 0, 280, 280);
-    let tensor = tf.browser.fromPixels(imgData, 1)
+    let tensor = tf.tensor(pixels)
+      .expandDims(-1)
       .resizeBilinear([28, 28])
-      .toFloat()
-      .div(255.0)
-      .expandDims(0);
+      .expandDims(0)
+      .toFloat();
 
     return tensor;
   });
@@ -173,35 +139,10 @@ async function predict() {
   const probs = await prediction.data();
 
   const maxIndex = probs.indexOf(Math.max(...probs));
-  document.getElementById("prediction").innerText =
-    "Prediction: " + maxIndex;
-
-  renderBars(probs);
+  document.getElementById("prediction").innerText = maxIndex;
 
   tensor.dispose();
   prediction.dispose();
-}
-
-function renderBars(probs) {
-  const container = document.getElementById("bars");
-  container.innerHTML = "";
-
-  probs.forEach((p, i) => {
-    const label = document.createElement("div");
-    label.innerText = i + " : " + (p * 100).toFixed(1) + "%";
-
-    const bar = document.createElement("div");
-    bar.className = "bar";
-
-    const fill = document.createElement("div");
-    fill.className = "bar-fill";
-    fill.style.width = (p * 100) + "%";
-
-    bar.appendChild(fill);
-
-    container.appendChild(label);
-    container.appendChild(bar);
-  });
 }
 </script>
 
